@@ -3,4 +3,4 @@ project(grafCytowan)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(grafCytowan main.cpp)
+add_executable(grafCytowan citation_graph_example.cc citation_graph.h)
