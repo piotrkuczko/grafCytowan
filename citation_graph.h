@@ -3,6 +3,30 @@
 
 #include <vector>
 
+
+
+
+
+struct PublicationNotFound : public std::exception {
+    const char * what () const noexcept {
+        return "PublicationNotFound";
+    }
+};
+
+struct PublicationAlreadyCreated : public std::exception {
+    const char * what () const noexcept {
+        return "PublicationAlreadyCreated";
+    }
+};
+
+struct TriedToRemoveRoot : public std::exception {
+    const char * what () const noexcept {
+        return "TriedToRemoveRoot";
+    }
+};
+
+
+
 template <class Publication>
 class CitationGraph {
     // Tworzy nowy graf. Tworzy także węzeł publikacji o identyfikatorze stem_id.
@@ -10,8 +34,8 @@ class CitationGraph {
 
 // Konstruktor przenoszący i przenoszący operator przypisania. Powinny być
 // noexcept.
-    CitationGraph(CitationGraph<P> &&other);
-    CitationGraph<P>& operator=(CitationGraph<P> &&other);
+    CitationGraph(CitationGraph<Publication> &&other);
+    CitationGraph<Publication>& operator=(CitationGraph<Publication> &&other);
 
 // Zwraca identyfikator źródła. Metoda ta powinna być noexcept wtedy i tylko
 // wtedy, gdy metoda Publication::get_id jest noexcept. Zamiast pytajnika należy
