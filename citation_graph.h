@@ -123,13 +123,9 @@ public:
 // o identyfikatorze id już istnieje. Zgłasza wyjątek PublicationNotFound, jeśli
 // któryś z wyspecyfikowanych poprzedników nie istnieje.
     void create(typename Publication::id_type const &id, typename Publication::id_type const &parent_id) {
-        if (exists(id))
-            throw PublicationAlreadyCreated();
-        if (!exists(parent_id))
-            throw PublicationNotFound();
-        std::shared_ptr<Node> newNode = std::make_shared<Node>(id);
-        map[id] = newNode;
-        add_citation(id, parent_id);
+        std::vector<typename Publication::id_type> v;
+        v.push_back(parent_id);
+        create(id, v);
     }
     void create(typename Publication::id_type const &id, std::vector<typename Publication::id_type> const &parent_ids) {
         if (exists(id))
