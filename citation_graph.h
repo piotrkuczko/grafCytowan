@@ -8,19 +8,19 @@
 
 
 struct PublicationNotFound : public std::exception {
-    const char * what () const noexcept {
+    const char * what () const noexcept override {
         return "PublicationNotFound";
     }
 };
 
 struct PublicationAlreadyCreated : public std::exception {
-    const char * what () const noexcept {
+    const char * what () const noexcept override {
         return "PublicationAlreadyCreated";
     }
 };
 
 struct TriedToRemoveRoot : public std::exception {
-    const char * what () const noexcept {
+    const char * what () const noexcept override {
         return "TriedToRemoveRoot";
     }
 };
@@ -35,45 +35,67 @@ private:
     public:
         Publication id;
         bool isRoot;
-        std::set<std::shared_ptr<Node> > children;
-        std::set<std::weak_ptr<Node> > parents;
-        Node (Publication::id_type const &stem_id, bool root)
+        std::set<std::shared_ptr<Node> > children;      // właściwie to czemu tu nie weak_ptr tylko shared_ptr??
+        std::set<std::weak_ptr<Node> > parents;         // BBBudro: "można stracić punkty za trzymanie
+        Node (Publication::id_type const &stem_id, bool root)   // internalsów publicznie", to chyba do tego sie odnosi
            : id(stem_id), isRoot(root) {}
     };
-    Node *root;
-    std::map <Publication, std::weak_ptr> map;
+    std::shared_ptr<Node> root;
+    std::map <Publication::id_type, std::weak_ptr<Node>> map;
 public:
     // Tworzy nowy graf. Tworzy także węzeł publikacji o identyfikatorze stem_id.
     CitationGraph(Publication::id_type const &stem_id) {
-        root = new Node(stem_id, true);
+        root = std::make_shared<Node>(stem_id, true);
     }
 
 // Konstruktor przenoszący i przenoszący operator przypisania. Powinny być
 // noexcept.
     CitationGraph(CitationGraph<Publication> &&other) noexcept {
-        this = std::move(other);
+        *this = std::move(other);
     }
     CitationGraph<Publication>& operator=(CitationGraph<Publication> &&other) {
-        this = std::move(other);
+        *this = std::move(other);
     }
 
 // Zwraca identyfikator źródła. Metoda ta powinna być noexcept wtedy i tylko
 // wtedy, gdy metoda Publication::get_id jest noexcept. Zamiast pytajnika należy
 // wpisać stosowne wyrażenie.
         // https://akrzemi1.wordpress.com/2011/06/10/using-noexcept/
-    Publication::id_type get_root_id() const noexcept(is_nothrow_move_constructible<T>::value && is_nothrow_move_assignable<T>::value);
+    //Publication::id_type get_root_id() const noexcept(is_nothrow_move_constructible<T>::value && is_nothrow_move_assignable<T>::value);
+    Publication::id_type get_root_id() const noexcept(?) {
 
+
+
+    }
 // Zwraca listę identyfikatorów publikacji cytujących publikację o podanym
 // identyfikatorze. Zgłasza wyjątek PublicationNotFound, jeśli dana publikacja
 // nie istnieje.
     std::vector<Publication::id_type> get_children(Publication::id_type const &id) const {
+        if (!exists(id))
+            throw (PublicationNotFound);
 
-    };
+        std::vector<Publication::id_type> result;    // weak_ptr<X> WEAK;
+        if (std::shared_ptr myNode = map.at(id).lock()) {  // WEAK.lock() zwraca shared_ptr na obiekt lub false
+            for (auto child : myNode -> children) {     // w sumie to jeśli przeszło exists to chyba nie trzeba tego ifa
+                result.push_back(child -> id);          // z linijki wyżej
+            }
+        }
+        return result;
+    }
 
 // Zwraca listę identyfikatorów publikacji cytowanych przez publikację o podanym
 // identyfikatorze. Zgłasza wyjątek PublicationNotFound, jeśli dana publikacja
 // nie istnieje.
-    std::vector<Publication::id_type> get_parents(Publication::id_type const &id) const;
+    std::vector<Publication::id_type> get_parents(Publication::id_type const &id) const {
+        if (!exists(id))
+            throw (PublicationNotFound);
+        std::vector<Publication::id_type> result;
+        std::shared_ptr myNode = map.at(id);
+        for (auto parent : myNode -> parents) {     // myNode -> parents to zbiór weak_ptr'ów, parent2 to shared_ptr
+            if (std::shared_ptr parent2 = parent.lock())  //  jeśli obiekt wskazywany przez parent istnieje
+                result.push_back(parent2 -> id);
+        }
+    }
 
 // Sprawdza, czy publikacja o podanym identyfikatorze istnieje.
     bool exists(Publication::id_type const &id) const;
