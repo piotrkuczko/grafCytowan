@@ -1,5 +1,5 @@
-#ifndef GRAFCYTOWAN_CITATION_GRAPH_H
-#define GRAFCYTOWAN_CITATION_GRAPH_H
+#ifndef CITATION_GRAPH_H
+#define CITATION_GRAPH_H
 
 #include <vector>
 #include <memory>
@@ -7,19 +7,19 @@
 #include <map>
 
 
-struct PublicationNotFound : public std::exception {
+class PublicationNotFound : public std::exception {
     const char * what () const noexcept override {
         return "PublicationNotFound";
     }
 };
 
-struct PublicationAlreadyCreated : public std::exception {
+class PublicationAlreadyCreated : public std::exception {
     const char * what () const noexcept override {
         return "PublicationAlreadyCreated";
     }
 };
 
-struct TriedToRemoveRoot : public std::exception {
+class TriedToRemoveRoot : public std::exception {
     const char * what () const noexcept override {
         return "TriedToRemoveRoot";
     }
@@ -146,6 +146,7 @@ public:
         if (!exists(child_id) || !exists(parent_id))
             throw PublicationNotFound();
 
+
     }
 
 // Usuwa publikację o podanym identyfikatorze. Zgłasza wyjątek
@@ -156,11 +157,10 @@ public:
             throw PublicationNotFound();
         if (id == root -> publication.get_id())
             throw TriedToRemoveRoot();
-        // TODO: remove this node from every parent, because parents are only ones who got shared_pointers on this node
         std::shared_ptr<Node> myNode = map.at(id).lock();
         for (auto parent : myNode -> parents) {
             if (std::shared_ptr<Node> validParent = parent.lock()) {
-
+                validParent -> children.erase(myNode);
             }
 
         }
@@ -168,4 +168,4 @@ public:
 
 };
 
-#endif //GRAFCYTOWAN_CITATION_GRAPH_H
+#endif //CITATION_GRAPH_H
