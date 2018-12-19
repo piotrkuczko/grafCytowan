@@ -35,18 +35,19 @@ private:
     public:
         Publication publication;
         std::set<std::shared_ptr<Node> > children;
-        std::set<std::weak_ptr<Node> > parents;
+        std::set<std::weak_ptr<Node>, std::owner_less<std::weak_ptr<Node> > > parents;
         Node (typename Publication::id_type const &stem_id)
                 : publication(stem_id) {}
     };
 
     std::shared_ptr<Node> root;
-    std::map <typename Publication::id_type, std::weak_ptr<Node>> map;
+    std::map <typename Publication::id_type, std::weak_ptr<Node> > map;
 
 public:
     // Tworzy nowy graf. Tworzy także węzeł publikacji o identyfikatorze stem_id.
     CitationGraph(typename Publication::id_type const &stem_id) {
         root = std::make_shared<Node>(stem_id);
+        map[stem_id] = root;
     }
 
 // Konstruktor przenoszący i przenoszący operator przypisania. Powinny być
@@ -126,8 +127,9 @@ public:
             throw PublicationAlreadyCreated();
         if (!exists(parent_id))
             throw PublicationNotFound();
-        // TODO: maybe with add_citation ?
-
+        std::shared_ptr<Node> newNode = std::make_shared<Node>(id);
+        map[id] = newNode;
+        add_citation(id, parent_id);
     }
     void create(typename Publication::id_type const &id, std::vector<typename Publication::id_type> const &parent_ids) {
         if (exists(id))
@@ -136,8 +138,11 @@ public:
             if (!exists(parent))
                 throw PublicationNotFound();
         }
-        // TODO: maybe with add_citation ?
-
+        std::shared_ptr<Node> newNode = std::make_shared<Node>(id);
+        map[id] = newNode;
+        for (auto parent : parent_ids) {
+            add_citation(id, parent);
+        }
     }
 
 // Dodaje nową krawędź w grafie cytowań. Zgłasza wyjątek PublicationNotFound,
@@ -145,8 +150,10 @@ public:
     void add_citation(typename Publication::id_type const &child_id, typename Publication::id_type const &parent_id) {
         if (!exists(child_id) || !exists(parent_id))
             throw PublicationNotFound();
-
-
+        std::shared_ptr<Node> childNode = map.at(child_id).lock();
+        std::shared_ptr<Node> parentNodeLocked = map.at(parent_id).lock();
+        childNode->parents.insert(parentNodeLocked);
+        parentNodeLocked -> children.insert(childNode);
     }
 
 // Usuwa publikację o podanym identyfikatorze. Zgłasza wyjątek
