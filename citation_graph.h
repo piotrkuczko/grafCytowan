@@ -56,7 +56,9 @@ public:
         *this = std::move(other);
     }
     CitationGraph<Publication>& operator=(CitationGraph<Publication> &&other) {
-        *this = std::move(other);
+        root.swap( other.root);
+        map.swap(other.map);
+        return *this;
     }
 
 // Zwraca identyfikator źródła. Metoda ta powinna być noexcept wtedy i tylko
@@ -77,6 +79,7 @@ public:
             throw PublicationNotFound();
 
         std::vector<typename Publication::id_type> result;
+        result.clear();
         std::shared_ptr<Node> myNode = map.at(id).lock();
         for (auto child : myNode -> children) {
             result.push_back(child -> publication.get_id());
@@ -91,11 +94,13 @@ public:
         if (!exists(id))
             throw PublicationNotFound();
         std::vector<typename Publication::id_type> result;
+        result.clear();
         std::shared_ptr<Node> myNode = map.at(id).lock();
         for (auto parent : myNode -> parents) {
             if (std::shared_ptr<Node> parent2 = parent.lock())
                 result.push_back(parent2 -> publication.get_id());
         }
+        return result;
     }
 
 // Sprawdza, czy publikacja o podanym identyfikatorze istnieje.
@@ -123,9 +128,7 @@ public:
 // o identyfikatorze id już istnieje. Zgłasza wyjątek PublicationNotFound, jeśli
 // któryś z wyspecyfikowanych poprzedników nie istnieje.
     void create(typename Publication::id_type const &id, typename Publication::id_type const &parent_id) {
-        std::vector<typename Publication::id_type> v;
-        v.push_back(parent_id);
-        create(id, v);
+        create(id, std::vector<typename Publication::id_type> {parent_id});
     }
     void create(typename Publication::id_type const &id, std::vector<typename Publication::id_type> const &parent_ids) {
         if (exists(id))
@@ -134,10 +137,25 @@ public:
             if (!exists(parent))
                 throw PublicationNotFound();
         }
+
+        if(parent_ids.size() == 0) throw PublicationNotFound();
+
         std::shared_ptr<Node> newNode = std::make_shared<Node>(id);
         map[id] = newNode;
-        for (auto parent : parent_ids) {
-            add_citation(id, parent);
+        std::vector<std::shared_ptr<Node> > addedParents;
+        try {
+            for (auto parent : parent_ids) {
+                std::shared_ptr<Node> parentNode = map.at(parent).lock();
+                addedParents.push_back(parentNode);
+                parentNode -> children.insert(newNode);
+                newNode -> parents.insert(parentNode);
+            }
+        } catch(...) {
+            for (auto addedParent : addedParents) {
+                addedParent -> children.erase(newNode);
+                newNode -> parents.erase(addedParent);
+            }
+            map.erase(id);
         }
     }
 
