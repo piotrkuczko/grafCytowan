@@ -32,7 +32,7 @@ class CitationGraph {
 
 private:
     class Node {
-    private:
+    public:
         Publication publication;
         std::set<std::shared_ptr<Node> > children;
         std::set<std::weak_ptr<Node> > parents;
@@ -78,7 +78,7 @@ public:
         std::vector<typename Publication::id_type> result;
         std::shared_ptr<Node> myNode = map.at(id).lock();
         for (auto child : myNode -> children) {
-            result.push_back(child -> id);
+            result.push_back(child -> publication.get_id());
         }
         return result;
     }
@@ -90,18 +90,18 @@ public:
         if (!exists(id))
             throw PublicationNotFound();
         std::vector<typename Publication::id_type> result;
-        std::shared_ptr<Node> myNode = map.at(id);
+        std::shared_ptr<Node> myNode = map.at(id).lock();
         for (auto parent : myNode -> parents) {
             if (std::shared_ptr<Node> parent2 = parent.lock())
-                result.push_back(parent2 -> id);
+                result.push_back(parent2 -> publication.get_id());
         }
     }
 
 // Sprawdza, czy publikacja o podanym identyfikatorze istnieje.
     bool exists(typename Publication::id_type const &id) const {
-        std::weak_ptr<Node> checkNode = map.find(id);
+        auto checkNode = map.find(id);
         if (checkNode == map.end()) return false;
-        if (checkNode.expired()) return false;
+        if (checkNode -> second.expired()) return false;
         return true;
     }
 
