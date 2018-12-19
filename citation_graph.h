@@ -33,7 +33,7 @@ class CitationGraph {
 private:
     class Node {
     public:
-        Publication id;
+        Publication::id_type id;
         bool isRoot;
         std::set<std::shared_ptr<Node> > children;      // właściwie to czemu tu nie weak_ptr tylko shared_ptr??
         std::set<std::weak_ptr<Node> > parents;         // BBBudro: "można stracić punkty za trzymanie
