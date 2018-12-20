@@ -179,7 +179,6 @@ int main() {
             std::cout << e.what() << std::endl;
         }
     }
-    printf("JESTEM 180 LINIJKA, JESZCZE ZYJE\n");
 
 
     {
@@ -247,7 +246,6 @@ int main() {
         static_assert(noexcept(std::declval<CitationGraph<Publication>>().get_root_id()));
         static_assert(!noexcept(std::declval<CitationGraph<PublicationThrow>>().get_root_id()));
     }
-    printf("JESTEM 250 linijka, jeszcze zyje\n");
     {
         for (int j = 2; j <= 7; ++ j) {
             bool succeeded = false;
@@ -307,7 +305,6 @@ int main() {
             }
         }
     }
-    printf("jestem 310 linijka, jeszcze zyje\n");
     {
         bool succeeded = false;
         gThrowCounter = 1000;
@@ -350,7 +347,6 @@ int main() {
             }
         }
     }
-    printf("jestem 350 linijka, jeszcze zyje\n");
     {
         bool succeeded = false;
         wypisuj = true;
@@ -369,8 +365,6 @@ int main() {
                 succeeded = true;
             }
             catch (...) {
-                // std::cout << e.what() << std::endl;
-                printf("kecz %d\n", (int)nextThrowCount);
                 assert(gen.exists(PublicationThrowEverything::id_type{1}));
                 assert(gen.exists(PublicationThrowEverything::id_type{2}));
                 assert(gen.exists(PublicationThrowEverything::id_type{3}));
